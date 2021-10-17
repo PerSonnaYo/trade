@@ -2,11 +2,7 @@
 // Created by Luci Atkins on 10/16/21.
 //
 #include "trade.h"
-typedef struct		s_list
-{
-    void			*content;
-    struct s_list	*next;
-}					t_list;
+
 
 t_list	*ft_lstnew(void *content)
 {
@@ -44,10 +40,10 @@ void	ft_lstadd_back(t_list **lst, t_list *new)
     cur->next = new;
 }
 
-t_list *deletelem(t_list *lst, t_list *root)
+t_list *deletelem(t_list *lst, t_list **root)
 {
     t_list *temp;
-    temp = root;
+    temp = *root;
     while (temp->next != lst) // просматриваем список начиная с корня
         { // пока не найдем узел, предшествующий lst
         temp = temp->next;

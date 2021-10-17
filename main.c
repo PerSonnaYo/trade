@@ -130,11 +130,35 @@ struct keys{
     double price;
     int id;
 };
+
+struct w_link{
+    char alp;
+    struct avl_node *avl;
+};
+
 struct kv_node{
     struct avl_node avl;
     struct keys *key;
     order_buy* value;
 };
+
+struct kv_node1{
+    struct avl_node avl;
+    int key;
+    struct w_link* value;
+};
+
+int cmp_func1(struct avl_node *a, struct avl_node *b, void *aux)
+{
+    struct kv_node *aa, *bb;
+    aa = _get_entry(a, struct kv_node, avl);
+    bb = _get_entry(b, struct kv_node, avl);
+
+    if (aa->key < bb->key) return -1;
+    else if (aa->key > bb->key) return 1;
+    else return 0;
+}
+
 int cmp_func(struct avl_node *a, struct avl_node *b, void *aux)
         {
     struct kv_node *aa, *bb;
@@ -147,113 +171,82 @@ int cmp_func(struct avl_node *a, struct avl_node *b, void *aux)
     else if ((aa->key->price >= bb->key->price) && (aa->key->id < bb->key->id)) return 1;
     else return 0;
         }
-        int cmp_func1(struct avl_node *a, struct avl_node *b, void *aux)
-                {
-    struct kv_node *aa, *bb;
-    aa = _get_entry(a, struct kv_node, avl);
-    bb = _get_entry(b, struct kv_node, avl);
 
-    if ((aa->key->price <= bb->key->price) && (aa->key->id > bb->key->id)) return -1;
-//    else if ((aa->key->price > bb->key->price) && (aa->key->id > bb->key->id)) return 1;
-    else if ((aa->key->price <= bb->key->price) && (aa->key->id < bb->key->id)) return 1;
-//    else if ((aa->key->price >= bb->key->price) && (aa->key->id < bb->key->id)) return 1;
-    else return 0;
-                }
-//struct kv_node1{
-//    struct avl_node avl;
-//    int key;
-//    order_buy* value;
-//};
-
-int market(struct avl_tree *tree_sell, struct avl_tree *tree)
+int market(t_list *sell, struct avl_tree *tree)
 {
 	order_sell* ord;
+	order_buy* order_sell;
 	ord = malloc(sizeof(order_sell));
 	ord->id = 0;
 	struct avl_node *cur;
-	struct avl_node *cur_sell;
 	struct kv_node *node, query;
-	struct kv_node *node1, query1;
-	query1.key = malloc(sizeof(struct keys));
 
 	cur = avl_last(tree);
 	node = _get_entry(cur, struct kv_node, avl);
-	query1.key->price = node->value->price;
-	query1.key->id = 1;
-	cur_sell = avl_search_smaller(tree_sell, &query1.avl, cmp_func1);
-	cur_sell = avl_first(tree_sell);
-	node1 = _get_entry(cur_sell, struct kv_node, avl);
-	while (node1 && node && node->value->price >= node1->value->price && node1->value->num > 0)
+	order_sell = (order_buy*)sell->content;
+	while(1)
 	{
-		ord->id++;
-		ord->buy = 'T';
-		if (node->value->id < node1->value->id)
+		if (node->value->price >= order_sell->price)
 		{
-			ord->id_early = node->value->id;
-			ord->id_present = node1->value->id;
-			ord->price = node->value->price;
+			while (sell && node && node->value->price >= order_sell->price)
+			{
+				ord->id++;
+				ord->buy = 'T';
+				if (node->value->id < order_sell->id)
+				{
+					ord->id_early = node->value->id;
+					ord->id_present = order_sell->id;
+					ord->price = node->value->price;
+				}
+				else{
+					ord->id_present = node->value->id;
+					ord->id_early = order_sell->id;
+					ord->price = order_sell->price;
+				}
+				ord->num = order_sell->num > node->value->num ? node->value->num : order_sell->num;
+				order_sell->num = order_sell->num - node->value->num;
+				node->value->num = node->value->num - order_sell->num;
+				if (node->value->num <= 0){
+					avl_remove(tree, cur);
+					free(node->value);
+					free(cur);
+					cur = avl_last(tree);
+					node = _get_entry(cur, struct kv_node, avl);
+				}
+				if (order_sell->num <= 0){
+					sell = deletelem(sell, &sell);
+					if (sell)
+						order_sell = (order_buy*)sell->content;
+				}
+			}
 		}
 		else{
-			ord->id_present = node->value->id;
-			ord->id_early = node1->value->id;
-			ord->price = node1->value->price;
-		}
-		ord->num = node1->value->num > node->value->num ? node->value->num : node1->value->num;
-		node1->value->num = node1->value->num - node->value->num;
-		node->value->num = node->value->num - node1->value->num;
-		if (node->value->num <= 0){
-			avl_remove(tree, cur);
-			free(node->value);
-			free(cur);
-			cur = avl_last(tree);
-			node = _get_entry(cur, struct kv_node, avl);
-		}
-		if (node1->value->num <= 0){
-		    avl_remove(tree_sell, cur_sell);
-		    free(node1->value);
-		    free(cur_sell);
-		    if (node){
-//		        query1.key = malloc(sizeof(struct keys));
-//		        query1.key->price = node->value->price;
-//		        query1.key->id = node->value->id;
-//		        cur_sell = avl_search_smaller(tree_sell, &query1.avl, cmp_func);
-		        cur_sell = avl_first(tree_sell);
-		        node1 = _get_entry(cur_sell, struct kv_node, avl);
-//		        cur_sell = avl_first(tree_sell);
-//		        node1 = _get_entry(cur_sell, struct kv_node, avl);
-		    } else
-		        node1 = NULL;
+			if (sell->next)
+				sell = sell->next;
+			else
+				return 0;
 		}
 	}
-//	if (node1->value->num > 0)
-//	    return 1;
 	return 0;
 }
 
-
-//int cmp_func_sell(struct avl_node *a, struct avl_node *b, void *aux)
-//        {
-//    struct kv_node *aa, *bb;
-//    aa = _get_entry(a, struct kv_node, avl);
-//    bb = _get_entry(b, struct kv_node, avl);
-//
-//    if (aa->key < bb->key) return -1;
-//    else if (aa->key > bb->key) return 1;
-//    else return 0;
-//        }
 char *pattern_open()
 {
 	struct avl_tree tree;
-	struct avl_tree tree_sell;
+	struct avl_tree base;
     struct avl_node *cur;
-    struct kv_node *node, query;
-	struct avl_node *cur1;
-    struct kv_node *node1, query1;
+    struct kv_node *node, query1;
+	struct kv_node1 *gen, query, *find;
+
 	char **str;
+	// char **base;
+
 	order_buy or_buy;
-//	or_buy = malloc(sizeof(order_buy));
+	t_list *lst_sell;
+	t_list *lst_gen;
+	// lst_gen = malloc(sizeof(lst));
 	avl_init(&tree, NULL);
-	avl_init(&tree_sell, NULL);
+	avl_init(&base, NULL);
     FILE * fp;
     char * line = NULL;
     size_t len = 0;
@@ -262,31 +255,58 @@ char *pattern_open()
     if (fp == NULL)
         exit(EXIT_FAILURE);
     while ((read = getline(&line, &len, fp)) != -1) {
-		node = (struct kv_node *)malloc(sizeof(struct kv_node));
-		node1 = (struct kv_node1 *)malloc(sizeof(struct kv_node));
+		gen = (struct kv_node1 *)malloc(sizeof(struct kv_node1));
 		str = ft_split(line, ',');
 		if (str[2][0] == 'B') {
+			node = (struct kv_node *)malloc(sizeof(struct kv_node));
         	node->key = malloc(sizeof(struct keys));
         	node->value = malloc(sizeof(order_buy));
         	node->key->id = atoi(str[1]);
+			gen->value = malloc(sizeof(struct kv_node1));
+			gen->key = node->key->id;
+			gen->value->alp = str[2][0];
+			gen->value->avl = &node->avl;
+			avl_insert(&base, &gen->avl, cmp_func1);
         	node->key->price = atof(str[5]);
 			node->value->id = atoi(str[1]);
 			node->value->num = atoi(str[4]);
 			node->value->price = atof(str[5]);
-//        	node->value = &or_buy;
         	avl_insert(&tree, &node->avl, cmp_func);
 		}
 		if (str[2][0] == 'S') {
-//			node1->key = atoi(str[1]);
-			node1->key = malloc(sizeof(struct keys));
-			node1->value = malloc(sizeof(order_buy));
-			node1->key->id = atoi(str[1]);
-			node1->key->price = atof(str[5]);
-			node1->value->id = atoi(str[1]);
-			node1->value->num = atoi(str[4]);
-			node1->value->price = atof(str[5]);
-			avl_insert(&tree_sell, &node1->avl, cmp_func);
-			market(&tree_sell, &tree);
+			node = (struct kv_node *)malloc(sizeof(struct kv_node));
+			or_buy.id = atoi(str[1]);
+			gen->value = malloc(sizeof(struct kv_node1));
+			gen->key = node->key->id;
+			gen->value->alp = str[2][0];
+			gen->value->avl = &node->avl;
+			avl_insert(&base, &gen->avl, cmp_func1);
+			or_buy.price = atof(str[5]);
+			or_buy.num = atoi(str[4]);
+			lst_sell = ft_lstnew(&or_buy);
+			ft_lstadd_back(&lst_gen, lst_sell);
+			market(lst_gen, &tree);
+		}
+		if (str[0][0] == 'C') {
+			int x = atoi(str[1]);
+			query.key = x;
+    		cur = avl_search(&base, &query.avl, cmp_func1);
+    		find = _get_entry(cur, struct kv_node1, avl);
+			if (find->value->alp == 'B')
+			{
+				avl_remove(&tree, find->value->avl);
+			}
+			else{
+				t_list *pont = lst_gen;
+				while(pont)
+				{
+					order_buy* pp = (order_buy*)pont->content;
+					if (pp->id == x){
+						pont = deletelem(pont, &lst_gen);
+						break;
+					}
+				}
+			}
 		}
 		ft_freetab(str, 6);
         }
