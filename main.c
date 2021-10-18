@@ -150,9 +150,9 @@ struct kv_node1{
 
 int cmp_func1(struct avl_node *a, struct avl_node *b, void *aux)
 {
-    struct kv_node *aa, *bb;
-    aa = _get_entry(a, struct kv_node, avl);
-    bb = _get_entry(b, struct kv_node, avl);
+    struct kv_node1 *aa, *bb;
+    aa = _get_entry(a, struct kv_node1, avl);
+    bb = _get_entry(b, struct kv_node1, avl);
 
     if (aa->key < bb->key) return -1;
     else if (aa->key > bb->key) return 1;
@@ -172,21 +172,25 @@ int cmp_func(struct avl_node *a, struct avl_node *b, void *aux)
     else return 0;
         }
 
-int market(t_list *sell, struct avl_tree *tree)
+        int market(t_list *selli, struct avl_tree *tree, struct avl_tree *base, FILE *fd)
 {
+    t_list *sell = selli;
 	order_sell* ord;
 	order_buy* order_sell;
 	ord = malloc(sizeof(order_sell));
 	ord->id = 0;
-	struct avl_node *cur;
-	struct kv_node *node, query;
+	int price = 0;
+	struct avl_node *cur, *cur1;
+	struct kv_node *node;
+	struct kv_node1 query;
 
 	cur = avl_last(tree);
 	node = _get_entry(cur, struct kv_node, avl);
-	order_sell = (order_buy*)sell->content;
+//	order_sell = (order_buy*)sell->content;
 	while(1)
 	{
-		if (node->value->price >= order_sell->price)
+	    order_sell = (order_buy*)sell->content;
+	    if (node && order_sell && node->value->price >= order_sell->price)
 		{
 			while (sell && node && node->value->price >= order_sell->price)
 			{
@@ -204,17 +208,32 @@ int market(t_list *sell, struct avl_tree *tree)
 					ord->price = order_sell->price;
 				}
 				ord->num = order_sell->num > node->value->num ? node->value->num : order_sell->num;
+				price = order_sell->num;
 				order_sell->num = order_sell->num - node->value->num;
-				node->value->num = node->value->num - order_sell->num;
+				order_buy* order_sell1 = (order_buy*)selli->content;
+//				order_sell1 = (order_buy*)selli->content;
+//				(order_buy*)sell->content->num =
+				node->value->num = node->value->num - price;
+				fprintf(fd, "%c,%d,%d,%d,%d", ord->buy, ord->id, ord->id_early, ord->id_present, ord->num);
+//				fputs(ft_itoa(ord->price), fd);
 				if (node->value->num <= 0){
+				    query.key = node->key->id;
+				    cur1 = avl_search(base, &query.avl, cmp_func1);
+				    avl_remove(base, cur1);
 					avl_remove(tree, cur);
 					free(node->value);
+					free(node->key);
+//					free(node);
+//					node = NULL;
+//					node->avl = NULL;
 					free(cur);
+//					free(node);
+					node = NULL;
 					cur = avl_last(tree);
 					node = _get_entry(cur, struct kv_node, avl);
 				}
 				if (order_sell->num <= 0){
-					sell = deletelem(sell, &sell);
+					sell = deletelem(sell, &selli);
 					if (sell)
 						order_sell = (order_buy*)sell->content;
 				}
@@ -232,6 +251,9 @@ int market(t_list *sell, struct avl_tree *tree)
 
 char *pattern_open()
 {
+    t_list *out_gen;
+    t_list *out_pre;
+    canc *gg;
 	struct avl_tree tree;
 	struct avl_tree base;
     struct avl_node *cur;
@@ -241,23 +263,63 @@ char *pattern_open()
 	char **str;
 	// char **base;
 
-	order_buy or_buy;
-	t_list *lst_sell;
+	order_buy *or_buy;
+//	t_list *lst_sell;
 	t_list *lst_gen;
 	// lst_gen = malloc(sizeof(lst));
 	avl_init(&tree, NULL);
 	avl_init(&base, NULL);
+	order_buy* order_sell1;
     FILE * fp;
+    FILE* fd;
     char * line = NULL;
     size_t len = 0;
     int read;
-    fp = fopen("../input.txt", "r");
+    fp = fopen("../trade/input.txt", "r");
+    fd = fopen("output.txt", "w+");
+//    fputs("defef\n", fd);
     if (fp == NULL)
         exit(EXIT_FAILURE);
     while ((read = getline(&line, &len, fp)) != -1) {
 		gen = (struct kv_node1 *)malloc(sizeof(struct kv_node1));
 		str = ft_split(line, ',');
-		if (str[2][0] == 'B') {
+		if (str[0][0] == 'C') {
+		    int x = atoi(str[1]);
+		    query.key = x;
+//		    int y = node->key->id;
+		    cur = avl_search(&base, &query.avl, cmp_func1);
+		    find = _get_entry(cur, struct kv_node1, avl);
+		    if (find == NULL)
+                continue;
+		    else if (find->value->alp == 'B')
+		    {
+		        gg = malloc(sizeof(struct cancel));
+		        gg->buy = 'X';
+		        gg->id = find->key;
+		        out_pre = ft_lstnew((void*)&gg);
+		        ft_lstadd_back(&out_gen, out_pre);
+		        avl_remove(&tree, find->value->avl);
+		    }
+		    else{
+		        t_list *pont = lst_gen;
+		        while(pont)
+		        {
+		            order_buy* pp = (order_buy*)pont->content;
+		            if (pp->id == x){
+		                gg = malloc(sizeof(struct cancel));
+		                gg->buy = 'X';
+		                gg->id = find->key;
+		                out_pre = ft_lstnew(gg);
+		                ft_lstadd_back(&out_gen, out_pre);
+		                pont = deletelem(pont, &lst_gen);
+
+		                break;
+		            }
+		            pont = pont->next;
+		        }
+		    }
+		}
+		else if (str[2][0] == 'B') {
 			node = (struct kv_node *)malloc(sizeof(struct kv_node));
         	node->key = malloc(sizeof(struct keys));
         	node->value = malloc(sizeof(order_buy));
@@ -267,50 +329,48 @@ char *pattern_open()
 			gen->value->alp = str[2][0];
 			gen->value->avl = &node->avl;
 			avl_insert(&base, &gen->avl, cmp_func1);
-        	node->key->price = atof(str[5]);
+//			free(gen);
+        	node->key->price = atof(str[4]);
 			node->value->id = atoi(str[1]);
-			node->value->num = atoi(str[4]);
-			node->value->price = atof(str[5]);
+			node->value->num = atoi(str[3]);
+			node->value->price = atof(str[4]);
         	avl_insert(&tree, &node->avl, cmp_func);
+//        	free(node->key);
+//        	free(node->value);
+//        	free(node);
+//        	node = NULL;
 		}
-		if (str[2][0] == 'S') {
-			node = (struct kv_node *)malloc(sizeof(struct kv_node));
-			or_buy.id = atoi(str[1]);
+		else if (str[2][0] == 'S') {
+//			node = (struct kv_node *)malloc(sizeof(struct kv_node));
+            or_buy = malloc(sizeof(order_buy));
+			or_buy->id = atoi(str[1]);
 			gen->value = malloc(sizeof(struct kv_node1));
-			gen->key = node->key->id;
+			gen->key = or_buy->id;
 			gen->value->alp = str[2][0];
 			gen->value->avl = &node->avl;
 			avl_insert(&base, &gen->avl, cmp_func1);
-			or_buy.price = atof(str[5]);
-			or_buy.num = atoi(str[4]);
-			lst_sell = ft_lstnew(&or_buy);
+			or_buy->price = atof(str[4]);
+			or_buy->num = atoi(str[3]);
+//			order_sell1 = (order_buy*)lst_gen->content;
+			t_list *lst_sell = ft_lstnew(or_buy);
+//			if (lst_gen)
+//			    order_sell1 = (order_buy*)lst_gen->content;
 			ft_lstadd_back(&lst_gen, lst_sell);
-			market(lst_gen, &tree);
+//			if (lst_gen)
+//			    order_sell1 = (order_buy*)lst_gen->content;
+//			if (lst_gen->next)
+//			    order_sell1 = (order_buy*)lst_gen->next->content;
+//			order_sell1 = (order_buy*)lst_gen->content;
 		}
-		if (str[0][0] == 'C') {
-			int x = atoi(str[1]);
-			query.key = x;
-    		cur = avl_search(&base, &query.avl, cmp_func1);
-    		find = _get_entry(cur, struct kv_node1, avl);
-			if (find->value->alp == 'B')
-			{
-				avl_remove(&tree, find->value->avl);
-			}
-			else{
-				t_list *pont = lst_gen;
-				while(pont)
-				{
-					order_buy* pp = (order_buy*)pont->content;
-					if (pp->id == x){
-						pont = deletelem(pont, &lst_gen);
-						break;
-					}
-				}
-			}
+		if (lst_gen)
+		{
+		    market(lst_gen, &tree, &base, fd);
+//		    order_sell1 = (order_buy*)lst_gen->content;
 		}
-		ft_freetab(str, 6);
+//		ft_freetab(str, 5);
         }
-		return ("fgg");
+    fclose(fd);
+    return ("fgg");
 }
 
 int main(void)

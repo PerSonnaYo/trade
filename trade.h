@@ -25,5 +25,12 @@ typedef struct or_sell{
      double price;
  } order_sell;
 
+typedef struct cancel{
+    int id;
+    char buy;
+} canc;
+
  t_list	*ft_lstnew(void *content);
  void	ft_lstadd_back(t_list **lst, t_list *new);
+ t_list *deletelem(t_list *lst, t_list **root);
+ char		*ft_itoa(int n);
