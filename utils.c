@@ -10,6 +10,7 @@ void	ft_freetab(char **str, size_t s)
 	    i++;
 	}
 	free(str);
+	str = NULL;//	free(str);
 }
 
 
@@ -84,4 +85,34 @@ char		**ft_split(char const *s, char c)
 	}
 	ju[y] = NULL;
 	return (ju);
+}
+
+int cmp_func1(struct avl_node *a, struct avl_node *b, void *aux)
+{
+    struct kv_node1 *aa, *bb;
+    aa = _get_entry(a, struct kv_node1, avl);
+    bb = _get_entry(b, struct kv_node1, avl);
+
+    if (aa->key < bb->key) return -1;
+    else if (aa->key > bb->key) return 1;
+    else return 0;
+}
+
+
+int cmp_func(struct avl_node *a, struct avl_node *b, void *aux)
+{
+    struct kv_node *aa, *bb;
+    aa = _get_entry(a, struct kv_node, avl);
+    bb = _get_entry(b, struct kv_node, avl);
+
+    if (aa->key->price < bb->key->price) return -1;
+    else if (aa->key->price > bb->key->price) return 1;
+    else if (aa->key->price == bb->key->price)
+    {
+        if (aa->key->id < bb->key->id)
+            return 1;
+        else
+            return -1;
+    }
+    else return 0;
 }

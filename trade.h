@@ -3,12 +3,14 @@
 #include <stdlib.h>
 #include "avltree.h"
 #include <fcntl.h>
+#include <string.h>
+# include <unistd.h>
 
-typedef struct		s_list
-{
-    void			*content;
-    struct s_list	*next;
-}					t_list;
+//typedef struct		s_list
+//{
+//    void			*content;
+//    struct s_list	*next;
+//}					t_list;
 
 struct w_link{
     char alp;
@@ -19,12 +21,11 @@ typedef struct or_buy{
      int id;
      int num;
      double price;
+     char* prici;
      struct avl_node *avl;
-    //  struct or *next;
-    //  struct or *prev;
  } order_buy;
 
-int id;
+extern int id;
 
 typedef struct or_sell{
      char buy;
@@ -33,7 +34,7 @@ typedef struct or_sell{
      int id_early;
      int id_present;
      int num;
-     double price;
+     char* price;
  } order_sell;
 
 typedef struct cancel{
@@ -58,8 +59,14 @@ struct kv_node1{
     struct w_link* value;
 };
 
- t_list	*ft_lstnew(void *content);
- void	ft_lstadd_back(t_list **lst, t_list *new);
- t_list *deletelem(t_list *lst, t_list **root);
- void	ft_freetab(char **str, size_t s);
- char		**ft_split(char const *s, char c);
+// t_list	*ft_lstnew(void *content);
+// void	ft_lstadd_back(t_list **lst, t_list *new);
+// t_list *deletelem(t_list *lst, t_list **root);
+void	ft_freetab(char **str, size_t s);
+char	**ft_split(char const *s, char c);
+int cmp_func1(struct avl_node *a, struct avl_node *b, void *aux);
+int cmp_func(struct avl_node *a, struct avl_node *b, void *aux);
+void free_tree(struct avl_tree *tree);
+void free_tree1(struct avl_tree *tree);
+char	*ft_strjoin(char const *s1, char const *s2);
+int	get_next_line(int fd, char **line);
